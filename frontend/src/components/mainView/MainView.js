@@ -38,6 +38,7 @@ import MainViewFactory from "../factories/mainViewFactory";
 import Permissions from "advana-platform-ui/dist/utilities/permissions";
 import SearchHandlerFactory from "../factories/searchHandlerFactory";
 import { useBottomScrollListener } from 'react-bottom-scroll-listener';
+import GameChangerThumbnailRow from "./ThumbnailRow";
 
 const _ = require('lodash');
 
@@ -64,6 +65,15 @@ const handlePageLoad = async (state, dispatch, history) => {
 	
 	try {
 		getTrendingSearches(state.cloneData);
+	} catch (e) {
+		// Do nothing
+	}
+	
+	try {
+		gameChangerAPI.getRecentlyOpenedDocs().then(({data}) => {
+			const filenames = data.map(record => record.document)
+			setState(dispatch, {recentlyOpened: filenames})
+		});
 	} catch (e) {
 		// Do nothing
 	}
@@ -248,6 +258,12 @@ const getTrendingSearches = (cloneData) => {
 	}).catch(e => {console.log("error getting internal users: " + e)});
 }
 
+const openDocument = (filename, cloneName, pageNumber = 0) => {
+	trackEvent(getTrackingNameForFactory(cloneName), 'CardInteraction' , 'PDFOpen');
+	trackEvent(getTrackingNameForFactory(cloneName), 'CardInteraction', 'filename', filename);
+	window.open(`/#/pdfviewer/gamechanger?filename=${filename}&pageNumber=${pageNumber}&cloneIndex=${cloneName}`);
+};
+
 const MainView = (props) => {
 	
 	const {context} = props;
@@ -258,7 +274,10 @@ const MainView = (props) => {
 	const [mainViewHandler, setMainViewHandler] = useState();
 	const [searchHandler, setSearchHandler] = useState();
 
-
+	/**
+	 * Handle initial page load, Retrieving views and setting search handler. 
+	 * Check if search is favorited
+	 */
 	useEffect(() => {
 		if (state.cloneDataSet && state.historySet && !pageLoaded) {
 			const factory = new MainViewFactory(state.cloneData.main_view_module);
@@ -291,6 +310,9 @@ const MainView = (props) => {
 		}
 	}, [state, dispatch, pageLoaded])
 
+	/**
+	 * Handle the separate paginations for category view
+	 */
 	useEffect(() => {
 		if (state.cloneData.clone_name === 'gamechanger'){
 			if (state.docsPagination && searchHandler) {
@@ -304,7 +326,6 @@ const MainView = (props) => {
 			}
 		}
 	}, [state, dispatch, searchHandler]);
-
 
 	useBottomScrollListener(() => {
 		if(state.activeCategoryTab !== 'all' && !state.docsLoading && !state.docsPagination){
@@ -454,7 +475,7 @@ const MainView = (props) => {
 	}
 	
 	const renderHideTabs = () => {
-		const { cloneData, componentStepNumbers, prevSearchText, resetSettingsSwitch, didYouMean, loading } = state;
+		const { cloneData, componentStepNumbers, prevSearchText, resetSettingsSwitch, didYouMean, loading, userData, recentlyOpened=[] } = state;
 		const showDidYouMean = didYouMean && !loading;
 		const latestLinks = localStorage.getItem(`recent${cloneData.clone_name}Searches`) || '[]';
 		const trendingStorage = localStorage.getItem(`trending${cloneData.clone_name}Searches`) || '[]';
@@ -475,6 +496,9 @@ const MainView = (props) => {
 			}
 		}
 
+		const { favorite_documents = [] } = userData;
+		const favorites = favorite_documents.map(favorite=>favorite.filename);
+		
 		return (
 			<div style={{marginTop: '40px'}}>
 			{prevSearchText &&
@@ -488,11 +512,16 @@ const MainView = (props) => {
 				</div>
 			)}
 			{cloneData.clone_name === 'gamechanger' && (
-				<div style={{ margin: '10px auto', width: '67%' }}>
-					<div className={`tutorial-step-${componentStepNumbers["Trending Searches"]}`} >
-						<MagellanTrendingLinkList onLinkClick={handleLinkListItemClick}
-						links={trendingLinks} title="Trending Searches This Week" padding={10} />
+				<div style={{ margin: '0 70px 0 70px', display: 'flex'}}>
+					<div style={{width:'70%'}} className={`tutorial-step-${componentStepNumbers["Trending Searches"]}`} >
+						<GameChangerThumbnailRow links={favorites} title="My Favorites" onLinkClick={(link) => openDocument(link,cloneData.clone_name)}/>
+						<GameChangerThumbnailRow links={recentlyOpened} title="Recently Opened" onLinkClick={openDocument}/>
+						<GameChangerThumbnailRow links={trendingLinks} title="Major Documents" onLinkClick={openDocument}/>
 					</div>
+					<div style={{padding:'0 0 0 10px'}}>
+						<MagellanTrendingLinkList onLinkClick={handleLinkListItemClick}
+							links={trendingLinks} title="Trending Searches" />
+					</div> 
 				</div>
 			)}
 			{cloneData.clone_name !== 'gamechanger' && (

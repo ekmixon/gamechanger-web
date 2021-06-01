@@ -1,6 +1,7 @@
 const mysql = require('mysql');
 const LOGGER = require('../lib/logger');
 const constantsFile = require('../config/constants');
+const sparkMD5Lib = require('spark-md5');
 
 /**
  * This class queries matomo for app stats and passes
@@ -12,16 +13,19 @@ class AppStatsController {
 		const {
 			mysql_lib = mysql,
 			logger = LOGGER,
-			constants = constantsFile
+			constants = constantsFile,
+			sparkMD5 = sparkMD5Lib
 		} = opts;
 		this.logger = logger;
 		this.constants = constants;
+		this.sparkMD5 = sparkMD5;
 		this.mysql = mysql_lib;
 		this.getAppStats = this.getAppStats.bind(this);
 		this.getSearchPdfMapping = this.getSearchPdfMapping.bind(this);
 		this.getAvgSearchesPerSession = this.getAvgSearchesPerSession.bind(this);
 		this.getTopSearches = this.getTopSearches.bind(this);
 		this.getDateNDaysAgo = this.getDateNDaysAgo.bind(this);
+		this.getRecentlyOpenedDocs = this.getRecentlyOpenedDocs.bind(this);
 	}
 	/**
 	 *
@@ -212,6 +216,43 @@ class AppStatsController {
 		});
 	}
 	/**
+	 * This method gets an array of the 10 most recently opened PDFS
+	 * by a specific user based on userID
+	 * @method queryPDFOpenedByUserId
+	 * @param {String} userId  
+	 */
+	async queryPDFOpenedByUserId(userId, connection) {
+		return new Promise((resolve, reject) => {
+			const self = this;
+			connection.query(`
+			SELECT DISTINCT
+				idaction_name, 
+				b.name as document, 
+				MAX(a.server_time) as documenttime 
+			FROM 
+				matomo_log_link_visit_action a, 
+				matomo_log_action b,
+				matomo_log_visit c
+			WHERE 
+				a.idaction_name = b.idaction  
+				and b.name like 'PDFViewer%'
+				and c.user_id = '${userId}'
+			GROUP BY 
+				document,
+				a.idaction_name
+			ORDER BY 
+				documenttime desc
+			LIMIT 10;`,
+			(error, results, fields) => {
+				if (error) {
+					this.logger.error(error, 'B07IQHT');
+					throw error;
+				}
+				resolve(self.cleanFilePath(results));
+			});
+		})
+	}
+	/**
 	 * This method gets an array of searches made with a timestamp and idvisit
 	 * depending on how many days back
 	 * @method querySearches
@@ -318,6 +359,34 @@ class AppStatsController {
 		} catch (err) {
 			this.logger.error(err, '88ZHUHU');
 			res.status(500).send(err);
+		} finally {
+			connection.end();
+		}
+	}
+
+	/**
+	 * This method is called by an endpoint to query matomo to find the most recently opened documents
+	 * by a user
+	 * @param {*} req
+	 * @param {*} res
+	 */
+	async getRecentlyOpenedDocs(req, res) {
+		let userId = 'Unknown';
+		let connection;
+		try {
+			const userId = this.sparkMD5.hash(req.get('SSL_CLIENT_S_DN_CN'));
+			connection = this.mysql.createConnection({
+				host: this.constants.MATOMO_DB_CONFIG.host,
+				user: this.constants.MATOMO_DB_CONFIG.user,
+				password: this.constants.MATOMO_DB_CONFIG.password,
+				database: this.constants.MATOMO_DB_CONFIG.database
+			});
+			connection.connect();
+			const results = await this.queryPDFOpenedByUserId(userId, connection);
+			res.status(200).send(results);
+		} catch (err) {
+			this.logger.error(err, '1CZPASK', userId)
+			res.status(500).send(err)
 		} finally {
 			connection.end();
 		}
