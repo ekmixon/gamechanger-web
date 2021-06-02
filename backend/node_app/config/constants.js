@@ -21,7 +21,7 @@ module.exports = Object.freeze({
 			},
 			'gc-orchestration': {
 				username: process.env.POSTGRES_USER_GC_ORCHESTRATION,
-				password: process.env.POSTHGRES_PASSWORD_GC_ORCHESTRATION,
+				password: process.env.POSTGRES_PASSWORD_GC_ORCHESTRATION,
 				database: 'gc-orchestration',
 				host: process.env.POSTGRES_HOST_GC_ORCHESTRATION,
 				port: 5432,
