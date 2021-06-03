@@ -514,9 +514,22 @@ const MainView = (props) => {
 			{cloneData.clone_name === 'gamechanger' && (
 				<div style={{ margin: '0 70px 0 70px', display: 'flex'}}>
 					<div style={{width:'70%'}} className={`tutorial-step-${componentStepNumbers["Trending Searches"]}`} >
-						<GameChangerThumbnailRow links={favorites} title="My Favorites" onLinkClick={(link) => openDocument(link,cloneData.clone_name)}/>
-						<GameChangerThumbnailRow links={recentlyOpened} title="Recently Opened" onLinkClick={openDocument}/>
-						<GameChangerThumbnailRow links={trendingLinks} title="Major Documents" onLinkClick={openDocument}/>
+						<GameChangerThumbnailRow 
+							links={favorites} 
+							title="My Favorites" 
+							onLinkClick={(link) => openDocument(link,cloneData.clone_name)}
+						/>
+						<GameChangerThumbnailRow 
+							links={recentlyOpened} 
+							title="Recently Opened" 
+							onLinkClick={openDocument}/>
+						<GameChangerThumbnailRow 
+							links={trendingLinks} 
+							title="Major Documents" 
+							onLinkClick={openDocument} 
+							thumbnailWidth='500px' 
+							thumbnailHeight='100px'
+						/>
 					</div>
 					<div style={{padding:'0 0 0 10px'}}>
 						<MagellanTrendingLinkList onLinkClick={handleLinkListItemClick}
