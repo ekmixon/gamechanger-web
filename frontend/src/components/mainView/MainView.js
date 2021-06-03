@@ -530,6 +530,14 @@ const MainView = (props) => {
 							thumbnailWidth='500px' 
 							thumbnailHeight='100px'
 						/>
+						{/* <GameChangerThumbnailRow
+							title="Banner Test"
+							isImgRow={false}
+						>
+							<div style={{width:6000}}>
+								<span>Hi</span>
+							</div>
+						</GameChangerThumbnailRow> */}
 					</div>
 					<div style={{padding:'0 0 0 10px'}}>
 						<MagellanTrendingLinkList onLinkClick={handleLinkListItemClick}
