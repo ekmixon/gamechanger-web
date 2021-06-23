@@ -92,6 +92,12 @@ app.use(jsonParser);
 app.use(express.static(__dirname + '/build'));
 app.use('/static', express.static(path.join(__dirname, 'static')));
 
+redisAsyncClient.select(12);
+await redisAsyncClient.set(`jared-testing`, 'frog');
+const response = await redisAsyncClient.get(`jared-testing`);
+console.log('uuuuuuuuuuuuuuuuuuuuu');
+console.log(response);
+
 if (constants.GAME_CHANGER_OPTS.isDecoupled) {
 	app.use(async function (req, res, next) {
 		const cn = req.get('x-env-ssl_client_certificate');
