@@ -14,6 +14,7 @@ import {
 	ListItemIcon,
 	ListItemText,
 	Divider
+
 } from "@material-ui/core";
 
 import EDAAPI from "../../api/eda-service-api.js";
@@ -719,16 +720,26 @@ const EdaCardHandler = {
 				}
 			}
 
-			const loadContractAward = async (open) => {
+			const loadContractAward = async (open, isSearch) => {
 				if (open && item.award_id_eda_ext !== "empty") {
 					const contractAwards = _.cloneDeep(state.contractAwards);
 					const awardID = item.award_id_eda_ext;
-					if (!contractAwards[awardID] || !contractAwards[awardID].length > 0) {
+					if (awardID && isSearch) {
+
+						try {
+							const results = await edaAPI.queryEDAContractAward(awardID, isSearch);
+							return results?.data?.docs;
+						}
+						catch(err) {
+							console.log(err);
+						}
+					}
+					else if (!contractAwards[awardID] || !contractAwards[awardID].length > 0) {
 						contractAwards[awardID] = 'loading';
 						setState(dispatch, { contractAwards });
 
 						try {
-							const contractMods = await edaAPI.queryEDAContractAward(item.award_id_eda_ext);
+							const contractMods = await edaAPI.queryEDAContractAward(awardID, isSearch);
 							contractAwards[awardID] = contractMods.data.length ? contractMods.data.sort() : [];
 	
 							setState(dispatch, { contractAwards });
@@ -791,7 +802,14 @@ const EdaCardHandler = {
 						<SimpleTable tableClass={'magellan-table'}
 							zoom={1}
 							headerExtraStyle={{ backgroundColor: '#313541', color: 'white' }}
-							rows={getEDAMetadataForPropertyTable(EDA_FIELD_JSON_MAP, fields, item)}
+							rows={getEDAMetadataForPropertyTable(EDA_FIELD_JSON_MAP, fields, item, async (awardID) => {
+								setState(dispatch, { loading: true });
+								const rawSearchResults = await loadContractAward(awardID, true);
+								console.log(rawSearchResults);
+								if (rawSearchResults) {
+									setState(dispatch, {rawSearchResults, loading: false})
+								}
+							})}
 							height={'auto'}
 							dontScroll={true}
 							colWidth={colWidth}

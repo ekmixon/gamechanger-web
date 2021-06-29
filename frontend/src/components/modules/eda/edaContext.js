@@ -25,7 +25,8 @@ const initState = {
             "army": [],
             "defense": [],
             "navy": []
-        }
+        },
+        contractAward: null
     },
     contractAwards: {},
     showDialog: false,

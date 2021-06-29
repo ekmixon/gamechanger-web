@@ -249,23 +249,13 @@ class EdaSearchHandler extends SearchHandler {
 			const clientObj = {esClientName: 'eda', esIndex: this.constants.EDA_ELASTIC_SEARCH_OPTS.index};
 			const permissions = req.permissions ? req.permissions : [];
 			const { esClientName, esIndex } = clientObj;
-			const { awardID } = req.body;
+			const { awardID, isSearch } = req.body;
 
-			// award ID can be a combination of 2 fields
-			const awardIDSplit = awardID.split("-");
-			let id = "";
-			let idv = "";
-			if (awardIDSplit.length > 1) {
-				id = awardIDSplit[1];
-				idv = awardIDSplit[0];
-			}
-			else {
-				id = awardID;
-			}
+			const {id, idv} = this.edaSearchUtility.splitAwardID(awardID);
 
 			let esQuery = '';
 			if (permissions.includes('View EDA') || permissions.includes('Webapp Super Admin')) {
-				esQuery = this.edaSearchUtility.getEDAContractQuery(id, idv, userId);
+				esQuery = this.edaSearchUtility.getEDAContractQuery(id, idv, isSearch, userId);
 			} else {
 				throw 'Unauthorized';
 			}
@@ -274,13 +264,19 @@ class EdaSearchHandler extends SearchHandler {
 			const results = await this.dataLibrary.queryElasticSearch(esClientName, esIndex, esQuery, userId);
 			if (results && results.body && results.body.hits && results.body.hits.total && results.body.hits.total.value && results.body.hits.total.value > 0) {
 				const hits = results.body.hits.hits;
-				const contractMods = [];
 
-				// grab the contract modification number
-				for (let hit of hits) {
-					contractMods.push(hit._source.extracted_data_eda_n.modification_number_eda_ext);
+				if (isSearch) {
+					return this.edaSearchUtility.cleanUpEsResults(results, [], userId, [], [], esIndex, esQuery);
+				} else {
+					const contractMods = [];
+
+					// grab the contract modification number
+					for (let hit of hits) {
+						contractMods.push(hit._source.extracted_data_eda_n.modification_number_eda_ext);
+					}
+					return contractMods;
 				}
-				return contractMods;
+
 			} else {
 				this.logger.error('Error with contract award Elasticsearch results', '3ZCEAYJ', userId);
 				return [];

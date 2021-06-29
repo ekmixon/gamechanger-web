@@ -1,6 +1,7 @@
+import React from "react";
+import { Link } from "@material-ui/core";
 
-
-export const getEDAMetadataForPropertyTable = (edaFieldJSONMap, edaFields, item) => {
+export const getEDAMetadataForPropertyTable = (edaFieldJSONMap, edaFields, item, awardIDClick) => {
 
 	const rows = [];
     
@@ -14,6 +15,14 @@ export const getEDAMetadataForPropertyTable = (edaFieldJSONMap, edaFields, item)
 
             if (item[fieldName]) {
                 row["Value"] = item[fieldName];
+
+				if (fieldName === "award_id_eda_ext") {
+					row["Value"] = (
+					<Link 
+						style={{ cursor: 'pointer'}}
+						onClick={() => awardIDClick(item[fieldName])}
+					>{item[fieldName]}</Link>);
+				}
             }
 			else {
 				row["Value"] = "Data Not Available";

@@ -20,8 +20,8 @@ export default class EDAAPI {
 
 	}
 
-	queryEDAContractAward = async (awardID) => {
+	queryEDAContractAward = async (awardID, isSearch) => {
 		const url = endpoints.edaContractAwardGET;
-		return axiosPOST(this.axios, url, {awardID});
+		return axiosPOST(this.axios, url, {awardID, isSearch});
 	}
 }

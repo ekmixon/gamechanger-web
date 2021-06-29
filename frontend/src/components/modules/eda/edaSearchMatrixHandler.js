@@ -177,6 +177,9 @@ const setEDASearchSetting = (field, value, state, dispatch) => {
                 edaSettings.majcoms[value.org].push(value.subOrg);
             }
             break;
+        case 'contractAward':
+            edaSettings.contractAward = value;
+            break;
         default:
             break;
     }
@@ -713,6 +716,25 @@ const renderModificationFilter = (state, dispatch) => {
     );
 }
 
+const renderContractAwardFilter = (state, dispatch) => {
+    return (
+        <TextField
+            placeholder="Contract Award ID"
+            variant="outlined"
+            defaultValue={state.edaSearchSettings.contractAward}
+            style={{ backgroundColor: 'white', width: '100%' }}
+            fullWidth={true}
+            onBlur={(event) => setEDASearchSetting('contractAward', event.target.value, state, dispatch)}
+            inputProps={{
+                style: {
+                    height: 19,
+                    width: '100%'
+                }
+            }}
+        />
+    )
+}
+
 const EDASearchMatrixHandler = {
     getSearchMatrixItems(props) {
         const {
@@ -748,6 +770,10 @@ const EDASearchMatrixHandler = {
     
                 <GCAccordion contentPadding={15} expanded={false} header={'CONTRACTS OR MODS'} headerBackground={'rgb(238,241,242)'} headerTextColor={'black'} headerTextWeight={'normal'}>
                     { renderModificationFilter(state, dispatch) }
+                </GCAccordion>
+
+                <GCAccordion contentPadding={15} expanded={false} header={'CONTRACT AWARD'} headerBackground={'rgb(238,241,242)'} headerTextColor={'black'} headerTextWeight={'normal'}>
+                    { renderContractAwardFilter(state, dispatch) }
                 </GCAccordion>
     
                 <GCButton style={{width: '100%', marginBottom: '10px', marginLeft: '-1px' }} onClick={() => { setState(dispatch, { runSearch: true })}}>Update Search</GCButton>

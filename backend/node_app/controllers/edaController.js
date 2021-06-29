@@ -17,6 +17,7 @@ class EDAController {
         try {
 			const edaSearchHandler = handlerFactory.createHandler('search', 'eda');
 			const results = await edaSearchHandler.queryContractAward(req, userId);
+            console.log(results);
             res.status(200).send(results);
         } catch(err) {
             res.status(500).send(err);

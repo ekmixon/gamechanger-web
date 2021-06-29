@@ -18,6 +18,7 @@ class EDASearchUtility {
 		this.getElasticsearchPagesQuery = this.getElasticsearchPagesQuery.bind(this);
 		this.getElasticsearchStatsQuery = this.getElasticsearchStatsQuery.bind(this);
 		this.cleanUpEsResults = this.cleanUpEsResults.bind(this);
+		this.splitAwardID = this.splitAwardID.bind(this);
 	}
 
 	getElasticsearchPagesQuery(
@@ -171,7 +172,7 @@ class EDASearchUtility {
 			if (mustQueries.length > 0) {
 				query.query.bool.must = query.query.bool.must.concat(mustQueries);
 			}
-			// console.log(JSON.stringify(query))
+			console.log(JSON.stringify(query))
 			return query;
 		} catch (err) {
 			this.logger.error(err, 'M6THI27', user);
@@ -603,6 +604,52 @@ class EDASearchUtility {
 
 		}
 
+		if (settings.contractAward && settings.contractAward.length > 0) {
+			const { id, idv } = this.splitAwardID(settings.contractAward);
+
+			mustQueries.push ({
+				nested: {
+					path: "extracted_data_eda_n",
+					query: {
+						bool: {
+							must: [
+								{ 
+									match: { 
+										"extracted_data_eda_n.award_id_eda_ext": {
+											query: id
+										}
+									}
+								}
+							]
+						}
+					}
+				}
+			});
+
+			if (idv !== "") {
+				mustQueries.push(
+				{
+					nested: {
+						path: "extracted_data_eda_n",
+						query: {
+							bool: {
+								must: [
+									{
+										match: {
+											"extracted_data_eda_n.referenced_idv_eda_ext": {
+												query: idv
+											}
+										}
+									}
+								]
+							}
+						}
+					}
+				}
+				)
+			}
+		}
+
 		return mustQueries;
 	}
 
@@ -645,25 +692,28 @@ class EDASearchUtility {
 					const pageSet = new Set();
 
 
-					r.inner_hits.pages.hits.hits.forEach((phit) => {
-						const pageIndex = phit._nested.offset;
-						// const snippet =  phit.fields["pages.p_raw_text"][0];
-						let pageNumber = pageIndex + 1;
-						// one hit per page max
-						if (!pageSet.has(pageNumber)) {
-							const [snippet, usePageZero] = this.searchUtility.getESHighlightContent(phit, user);
-							if (usePageZero) {
-								if (pageSet.has(0)) {
-									return;
-								} else {
-									pageNumber = 0;
-									pageSet.add(0);
+					if (r.inner_hits) {
+						r.inner_hits.pages.hits.hits.forEach((phit) => {
+							const pageIndex = phit._nested.offset;
+							// const snippet =  phit.fields["pages.p_raw_text"][0];
+							let pageNumber = pageIndex + 1;
+							// one hit per page max
+							if (!pageSet.has(pageNumber)) {
+								const [snippet, usePageZero] = this.searchUtility.getESHighlightContent(phit, user);
+								if (usePageZero) {
+									if (pageSet.has(0)) {
+										return;
+									} else {
+										pageNumber = 0;
+										pageSet.add(0);
+									}
 								}
+								pageSet.add(pageNumber);
+								result.pageHits.push({snippet, pageNumber });
 							}
-							pageSet.add(pageNumber);
-							result.pageHits.push({snippet, pageNumber });
-						}
-					});
+						});
+					}
+
 					result.pageHits.sort((a, b) => a.pageNumber - b.pageNumber);
 					if(r.highlight){
 						if(r.highlight['title.search']){
@@ -700,7 +750,8 @@ class EDASearchUtility {
 			});
 			results.searchTerms = searchTerms;
 			results.expansionDict = expansionDict;
-
+			console.log('--------------------------------')
+			console.log(results);
 			return results;
 		} catch (err) {
 			console.log(err);
@@ -781,7 +832,7 @@ class EDASearchUtility {
 		return result;
 	}
 
-	getEDAContractQuery(award = "", idv = "", user) {
+	getEDAContractQuery(award = "", idv = "", isSearch = false, user) {
 		try {
 			let query = {
 				"_source": {
@@ -840,10 +891,48 @@ class EDASearchUtility {
 				}
 				)
 			}
+
+			if (isSearch) {
+				query._source.includes = ['pagerank_r', 'kw_doc_score_r', 'orgs_rs', '*_eda_n*'];
+				query.stored_fields = [
+					'filename',
+					'title',
+					'page_count',
+					'doc_type',
+					'doc_num',
+					'ref_list',
+					'id',
+					'summary_30',
+					'keyw_5',
+					'p_text',
+					'type',
+					'p_page',
+					'display_title_s',
+					'display_org_s',
+					'display_doc_type_s'
+				];
+			}
+			console.log(JSON.stringify(query))
 			return query;
 		} catch(err) {
 			this.logger.error(err, 'S5PJASQ', user)
 		}
+	}
+
+	splitAwardID(awardID) {
+		// award ID can be a combination of 2 fields
+		const awardIDSplit = awardID.split("-");
+		let id = "";
+		let idv = "";
+		if (awardIDSplit.length > 1) {
+			id = awardIDSplit[1];
+			idv = awardIDSplit[0];
+		}
+		else {
+			id = awardID;
+		}
+
+		return { id, idv };
 	}
 
 }
