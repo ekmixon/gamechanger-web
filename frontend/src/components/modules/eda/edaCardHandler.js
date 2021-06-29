@@ -804,10 +804,14 @@ const EdaCardHandler = {
 							headerExtraStyle={{ backgroundColor: '#313541', color: 'white' }}
 							rows={getEDAMetadataForPropertyTable(EDA_FIELD_JSON_MAP, fields, item, async (awardID) => {
 								setState(dispatch, { loading: true });
+
+								const t0 = new Date().getTime();
 								const rawSearchResults = await loadContractAward(awardID, true);
+								const t1 = new Date().getTime();
+
 								console.log(rawSearchResults);
 								if (rawSearchResults) {
-									setState(dispatch, {rawSearchResults, loading: false})
+									setState(dispatch, {count: rawSearchResults.length, searchText: '', rawSearchResults, loading: false, resultsText: `${rawSearchResults.length} results found in ${((t1 - t0) / 1000).toFixed(2)} seconds`, showContractAward: true})
 								}
 							})}
 							height={'auto'}

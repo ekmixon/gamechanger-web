@@ -36,7 +36,7 @@ const clearFavoriteSearchUpdate = async (search, index, dispatch) => {
 
 const EdaSearchHandler = {
 	async handleSearch(state, dispatch) {
-		setState(dispatch, {runSearch: false});
+		setState(dispatch, {runSearch: false, showContractAward: true});
 		
 		const {
 			searchText = "",

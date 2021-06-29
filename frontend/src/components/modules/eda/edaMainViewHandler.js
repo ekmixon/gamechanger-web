@@ -165,7 +165,8 @@ const EdaMainViewHandler = {
 			timeSinceCache,
 			summaryCardView,
 			summaryCardData,
-			resultsText
+			resultsText,
+			showContractAward
 		} = state;
 		
 		let sideScroll = {
