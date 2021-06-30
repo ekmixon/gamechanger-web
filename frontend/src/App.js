@@ -160,6 +160,7 @@ const App = (props) => {
 								tutorialData={tutorialData && tutorialData[name] ? tutorialData[name].newUserTutorial : null}
 								history={history} isClone={true} cloneData={clone} /></GamechangerProvider>} pageName={clone.display_name}
 								allowFunction={() => {
+									console.log(Permissions.allowGCClone(clone.clone_name));
 									return Permissions.allowGCClone(clone.clone_name);
 								}}
 							/>

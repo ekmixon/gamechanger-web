@@ -241,6 +241,7 @@ if (constants.GAME_CHANGER_OPTS.isDecoupled) {
 }
 
 app.all('/api/gamechanger/admin/*', async function (req, res, next) {
+	console.log(req.permissions.includes('View EDA'));
 	if (req.permissions.includes('Gamechanger Admin') || req.permissions.includes('Webapp Super Admin')) {
 		next();
 	} else {
